@@ -25,7 +25,7 @@ public class FilteringImplTest {
     Тест фильтрации перелетов с вылетами до текущего момента времени.
     */
     @Test
-    public void testFilteringPredicate1() {
+    public void testFilteringBeforeCurrentTime() {
 
         Segment segmentNotCorrect =
                 new Segment(DATE_NOW.minusDays(1), DATE_NOW.plusDays(1));
@@ -57,7 +57,7 @@ public class FilteringImplTest {
     Тест фильтрации перелетов, у которых имеются сегменты с датой прилета раньше даты вылета.
     */
     @Test
-    public void testFilteringPredicate2() {
+    public void testFilteringArrivalBeforeDeparture() {
 
         Segment segmentNotCorrect =
                 new Segment(DATE_NOW.plusDays(2), DATE_NOW.plusDays(1));
@@ -90,7 +90,7 @@ public class FilteringImplTest {
     Тест фильтрации перелетов у которых общее время, проведенное на земле, превышает 2 часа.
     */
     @Test
-    public void testFilteringPredicate3() {
+    public void testFilteringIdleTimeMoreThan2Hours() {
 
         Segment mainSegment = new Segment(DATE_NOW.plusHours(1), DATE_NOW.plusHours(2));
 
