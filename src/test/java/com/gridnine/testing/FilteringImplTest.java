@@ -14,7 +14,6 @@ import static org.junit.jupiter.api.Assertions.*;
 public class FilteringImplTest {
 
     private static final LocalDateTime DATE_NOW = LocalDateTime.now();
-
     private Filtering<Flight> filtering;
 
     @BeforeEach
@@ -28,13 +27,17 @@ public class FilteringImplTest {
     @Test
     public void testFilteringPredicate1() {
 
-        Segment segmentNotCorrect = new Segment(DATE_NOW.minusDays(1), DATE_NOW.plusDays(1));
-        Segment segmentCorrect = new Segment(DATE_NOW.plusDays(1), DATE_NOW.plusDays(2));
+        Segment segmentNotCorrect =
+                new Segment(DATE_NOW.minusDays(1), DATE_NOW.plusDays(1));
+        Segment segmentCorrect =
+                new Segment(DATE_NOW.plusDays(1), DATE_NOW.plusDays(2));
 
-        Flight flight1 = new Flight(Arrays.asList(segmentNotCorrect));
-        Flight flight2 = new Flight(Arrays.asList(segmentCorrect));
+        Flight flight1 =
+                new Flight(List.of(segmentNotCorrect));
+        Flight flight2 =
+                new Flight(List.of(segmentCorrect));
 
-        Predicate<Flight> predicate = new Main.BeforeCurrentTimePredicate();
+        Predicate<Flight> predicate = Main.makeBeforeTimePredicate(DATE_NOW);
 
         assertFalse(predicate.test(flight1));
         assertTrue(predicate.test(flight2));
@@ -56,11 +59,15 @@ public class FilteringImplTest {
     @Test
     public void testFilteringPredicate2() {
 
-        Segment segmentNotCorrect = new Segment(DATE_NOW.plusDays(2), DATE_NOW.plusDays(1));
-        Segment segmentCorrect = new Segment(DATE_NOW.plusDays(1), DATE_NOW.plusDays(2));
+        Segment segmentNotCorrect =
+                new Segment(DATE_NOW.plusDays(2), DATE_NOW.plusDays(1));
+        Segment segmentCorrect =
+                new Segment(DATE_NOW.plusDays(1), DATE_NOW.plusDays(2));
 
-        Flight flight1 = new Flight(Arrays.asList(segmentNotCorrect, segmentCorrect));
-        Flight flight2 = new Flight(Arrays.asList(segmentCorrect));
+        Flight flight1 =
+                new Flight(Arrays.asList(segmentNotCorrect, segmentCorrect));
+        Flight flight2 =
+                new Flight(Arrays.asList(segmentCorrect));
 
         Predicate<Flight> predicate = new Main.ArrivalBeforeDeparturePredicate();
 
@@ -104,8 +111,9 @@ public class FilteringImplTest {
         Flight flight3 = new Flight(Arrays.asList(mainSegment, segment2));
         Flight flight4 = new Flight(Arrays.asList(mainSegment, segment3));
 
-        Predicate<Flight> predicate = new Main.IdleTimeMoreThan2HoursPredicate();
+        Predicate<Flight> predicate = Main.makeIdleTimeMoreThanNHoursPredicate(2);
         assertTrue(predicate.test(flight1));
+
         assertFalse(predicate.test(flight2));
         assertFalse(predicate.test(flight3));
         assertFalse(predicate.test(flight4));

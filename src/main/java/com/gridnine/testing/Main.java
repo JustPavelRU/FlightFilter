@@ -5,8 +5,9 @@ import java.util.List;
 import java.util.function.Predicate;
 
 /*
-Было бы неплохо вынести предикаты в отдельный пакет. Однако тогда для доступа к классу Flight необходимо было бы
-выносить его в отедельный файл. Можно ли так делать - я не совсем понял, поэтому оставил, как есть.
+Если перелеты (Flight) хранятся в реляционной БД, то (т.к. их может очень много) можем ограничить
+число записей в SQL-запросе. Если значения хранятся в каком-то файле (бинарник, текстовый), тогда
+нужно читать файл по частям.
 */
 public class Main {
 
@@ -14,33 +15,34 @@ public class Main {
 
         List<Flight> flights = FlightBuilder.createFlights();
         Filtering<Flight> filtering = new FilteringImpl();
-        System.out.println(flights);
 
-        filtering.addPredicate(new BeforeCurrentTimePredicate());
+        // Фильтруем перелеты до текущей даты.
+        filtering.addPredicate(makeBeforeTimePredicate(LocalDateTime.now()));
         flights = filtering.filter(flights);
         System.out.println(flights);
 
+        // Фильтруем перелеты, у которых время прибытия позже времени отправления
         filtering.addPredicate(new ArrivalBeforeDeparturePredicate());
         flights = filtering.filter(flights);
         System.out.println(flights);
 
-        filtering.addPredicate(new IdleTimeMoreThan2HoursPredicate());
+        // Фильтруем перелеты, у которых время простоя больше 2 часов.
+        filtering.addPredicate(makeIdleTimeMoreThanNHoursPredicate(2));
         flights = filtering.filter(flights);
         System.out.println(flights);
     }
 
     /*
-    Фильтруем перелеты с вылетами до текущего момента времени.
+    Получаем реализацию фильтрации перелетов до определенной даты. (В задаче текущая дата)
     */
-    static class BeforeCurrentTimePredicate implements Predicate<Flight> {
+    public static Predicate<Flight> makeBeforeTimePredicate(LocalDateTime date) {
 
-        @Override
-        public boolean test(Flight flight) {
+        return (Flight flight) -> {
             return flight.getSegments()
                     .get(0)
                     .getDepartureDate()
-                    .compareTo(LocalDateTime.now()) > 0;
-        }
+                    .compareTo(date) > 0;
+        };
 
     }
 
@@ -52,7 +54,9 @@ public class Main {
         @Override
         public boolean test(Flight flight) {
             for (var segment : flight.getSegments()) {
-                if (segment.getArrivalDate().compareTo(segment.getDepartureDate()) < 0) return false;
+                if (segment.getArrivalDate().compareTo(segment.getDepartureDate()) < 0) {
+                    return false;
+                }
             }
             return true;
         }
@@ -60,33 +64,37 @@ public class Main {
     }
 
     /*
-    Фильтруем перелеты, у которых общее время, проведенное на земле, превышает 2 часа.
+    Получаем реализацию фильтрации перелетов, у которых общее время, проведенное на земле,
+    превышает N часов. (В задаче 2 часа)
     */
-    static class IdleTimeMoreThan2HoursPredicate implements Predicate<Flight> {
-
-        @Override
-        public boolean test(Flight flight) {
+    public static Predicate<Flight> makeIdleTimeMoreThanNHoursPredicate(int hours) {
+        return (Flight flight) -> {
 
             if (flight.getSegments().size() == 1) return true;
             int minutes = 0;
 
             for (int i = 0; i < flight.getSegments().size() - 1; i++) {
 
-                var previousArrivalDate = flight.getSegments().get(i).getArrivalDate();
-                var nextDepartureDate = flight.getSegments().get(i + 1).getDepartureDate();
+                var previousArrivalDate =
+                        flight.getSegments().get(i).getArrivalDate();
+                var nextDepartureDate =
+                        flight.getSegments().get(i + 1).getDepartureDate();
 
-                if (nextDepartureDate.getDayOfMonth() - previousArrivalDate.getDayOfMonth() > 0) return false;
-
-                int minutes1 = previousArrivalDate.getHour() * 60 + previousArrivalDate.getMinute();
-                int minutes2 = nextDepartureDate.getHour() * 60 + nextDepartureDate.getMinute();
+                int minutes1 =
+                        previousArrivalDate.getDayOfMonth() * 24 * 60 +
+                        previousArrivalDate.getHour() * 60 +
+                        previousArrivalDate.getMinute();
+                int minutes2 =
+                        nextDepartureDate.getDayOfMonth() * 24 * 60 +
+                        nextDepartureDate.getHour() * 60 +
+                        nextDepartureDate.getMinute();
 
                 minutes += minutes2 - minutes1;
-
-                if (minutes > 120) return false;
+                if (minutes > hours * 60) return false;
 
             }
             return true;
-        }
 
+        };
     }
 }
